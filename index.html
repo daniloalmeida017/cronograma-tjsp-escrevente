@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciclo de Estudos TJSP - Sincronizado</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 20px 14px 60px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Painel de Nuvem / Sincronização */
+        .sync-panel {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sync-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--warning);
+            display: inline-block;
+        }
+
+        .dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot.error { background: var(--danger); }
+
+        .sync-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .sync-input {
+            flex: 1;
+            min-width: 220px;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .dashboard {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .stat-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-box .value {
+            font-size: 1.55rem;
+            font-weight: 700;
+        }
+
+        .val-total { color: var(--text-main); }
+        .val-done { color: var(--success); }
+        .val-left { color: var(--warning); }
+        .val-pct { color: var(--primary); }
+
+        .overall-progress-bar {
+            width: 100%;
+            height: 14px;
+            background: #0f172a;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+
+        .overall-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .cycle-banner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .cycle-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+        }
+
+        .cycle-badge {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+
+        .subjects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .subject-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 18px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .subject-card.active-cycle {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+
+        .subject-card.completed-subject {
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .subject-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .subject-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-num {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--primary);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .subject-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .subject-counters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+        }
+
+        .pill {
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+        }
+
+        .pill-done { color: var(--success); font-weight: 600; }
+        .pill-left { color: var(--warning); font-weight: 600; }
+        .pill-total { color: var(--text-muted); }
+
+        .subject-bar {
+            width: 100%;
+            height: 8px;
+            background: #0f172a;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+
+        .subject-bar-fill {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.25s ease;
+        }
+
+        .lessons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+            gap: 6px;
+        }
+
+        .lesson-box {
+            height: 36px;
+            border-radius: 6px;
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+
+        .lesson-box:hover {
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .lesson-box.checked {
+            background: var(--success);
+            border-color: var(--success);
+            color: #06281e;
+            font-weight: 700;
+        }
+
+        .footer-actions {
+            margin-top: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .subject-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ciclo de Estudos — TJSP (Escrevente)</h1>
+            <p>Sincronizado entre Computador e Celular</p>
+        </header>
+
+        <!-- Barra de Sincronização na Nuvem -->
+        <section class="sync-panel">
+            <div class="sync-top">
+                <div class="sync-status">
+                    <span class="dot" id="sync-dot"></span>
+                    <span id="sync-status-text">Modo Local (Cole a URL do Firebase abaixo para sincronizar PC e Celular)</span>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn btn-outline" onclick="syncFromCloud(true)" title="Buscar dados da nuvem agora">🔄 Atualizar</button>
+                    <button class="btn btn-outline" onclick="exportProgressCode()">📤 Copiar Código</button>
+                    <button class="btn btn-outline" onclick="importProgressCode()">📥 Colar Código</button>
+                </div>
+            </div>
+            <div class="sync-controls">
+                <input type="url" id="firebase-url-input" class="sync-input" placeholder="Ex: https://meu-tjsp-default-rtdb.firebaseio.com/">
+                <button class="btn" onclick="saveFirebaseUrl()">☁️ Conectar Nuvem</button>
+            </div>
+        </section>
+
+        <section class="dashboard">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="label">Total de Aulas</div>
+                    <div class="value val-total" id="total-lessons">515</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Aulas Assistidas</div>
+                    <div class="value val-done" id="watched-lessons">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Faltam Assistir</div>
+                    <div class="value val-left" id="remaining-lessons">515</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Progresso Geral</div>
+                    <div class="value val-pct" id="overall-percent">0%</div>
+                </div>
+            </div>
+
+            <div class="overall-progress-bar">
+                <div class="overall-progress-fill" id="overall-bar"></div>
+            </div>
+
+            <div class="cycle-banner">
+                <div class="cycle-info">
+                    <span>Matéria da vez no ciclo:</span>
+                    <span class="cycle-badge" id="current-cycle-name">1. Língua Portuguesa</span>
+                </div>
+                <div>
+                    <button class="btn" onclick="nextSubjectInCycle()">Avançar para Próxima Matéria ➔</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="subjects-list" id="subjects-container"></section>
+
+        <div class="footer-actions">
+            <button class="btn btn-outline" onclick="resetAllProgress()">🗑️ Zerar Todo o Progresso</button>
+        </div>
+    </div>
+
+    <script>
+        const SUBJECTS = [
+            { id: "port", order: 1, name: "Língua Portuguesa", total: 74 },
+            { id: "const", order: 2, name: "Direito Constitucional", total: 36 },
+            { id: "mat", order: 3, name: "Matemática", total: 73 },
+            { id: "penal", order: 4, name: "Direito Penal", total: 26 },
+            { id: "info", order: 5, name: "Informática", total: 64 },
+            { id: "ppenal", order: 6, name: "Direito Processual Penal", total: 38 },
+            { id: "rlm", order: 7, name: "Raciocínio Lógico", total: 39 },
+            { id: "pcivil", order: 8, name: "Direito Processual Civil", total: 34 },
+            { id: "adm", order: 9, name: "Direito Administrativo", total: 21 },
+            { id: "normas", order: 10, name: "Normas da Corregedoria Geral da Justiça", total: 37 },
+            { id: "atual", order: 11, name: "Atualidades", total: 44 },
+            { id: "legis", order: 12, name: "Legislação Interna", total: 29 }
+        ];
+
+        const STORAGE_KEY = "tjsp_escrevente_progress_v1";
+        const CYCLE_KEY = "tjsp_escrevente_active_cycle_v1";
+        const FIREBASE_URL_KEY = "tjsp_firebase_db_url_v1";
+
+        let progressData = {};
+        let activeCycleIndex = 0;
+        let firebaseUrl = "";
+
+        function normalizeSubjectProgress(obj) {
+            const clean = {};
+            SUBJECTS.forEach(sub => {
+                clean[sub.id] = (obj && Array.isArray(obj[sub.id])) ? obj[sub.id] : [];
+            });
+            return clean;
+        }
+
+        function setSyncIndicator(state, message) {
+            const dot = document.getElementById("sync-dot");
+            const txt = document.getElementById("sync-status-text");
+            dot.className = "dot " + (state === "online" ? "online" : state === "error" ? "error" : "");
+            txt.textContent = message;
+        }
+
+        function getCloudEndpoint() {
+            if (!firebaseUrl) return null;
+            const base = firebaseUrl.trim().replace(/\/+$/, "");
+            return base + "/tjsp_cronograma.json";
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            let parsed = {};
+            if (saved) {
+                try { parsed = JSON.parse(saved); } catch (e) { parsed = {}; }
+            }
+            progressData = normalizeSubjectProgress(parsed);
+
+            const savedCycle = localStorage.getItem(CYCLE_KEY);
+            if (savedCycle !== null && !isNaN(parseInt(savedCycle))) {
+                activeCycleIndex = parseInt(savedCycle) % SUBJECTS.length;
+            }
+
+            const savedFb = localStorage.getItem(FIREBASE_URL_KEY);
+            if (savedFb) {
+                firebaseUrl = savedFb;
+                document.getElementById("firebase-url-input").value = firebaseUrl;
+            }
+        }
+
+        function saveLocalState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progressData));
+            localStorage.setItem(CYCLE_KEY, activeCycleIndex.toString());
+        }
+
+        async function saveToCloud() {
+            saveLocalState();
+            const endpoint = getCloudEndpoint();
+            if (!endpoint) return;
+
+            setSyncIndicator("online", "Salvando na nuvem...");
+            try {
+                const payload = {
+                    progressData: progressData,
+                    activeCycleIndex: activeCycleIndex,
+                    updatedAt: Date.now()
+                };
+                const res = await fetch(endpoint, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("Erro HTTP " + res.status);
+                const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                setSyncIndicator("online", `Sincronizado na nuvem às ${now}`);
+            } catch (err) {
+                setSyncIndicator("error", "Erro ao salvar na nuvem. Verifique a URL ou as Regras do Firebase.");
+            }
+        }
+
+        async function syncFromCloud(pushIfEmpty = false) {
+            const endpoint = getCloudEndpoint();
+            if (!endpoint) return;
+
+            setSyncIndicator("online", "Sincronizando com a nuvem...");
+            try {
+                const res = await fetch(endpoint);
+                if (!res.ok) throw new Error("Erro HTTP " + res.status);
+                const data = await res.json();
+
+                if (data && data.progressData) {
+                    progressData = normalizeSubjectProgress(data.progressData);
+                    if (typeof data.activeCycleIndex === "number") {
+                        activeCycleIndex = data.activeCycleIndex % SUBJECTS.length;
+                    }
+                    saveLocalState();
+                    render();
+                    const now = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                    setSyncIndicator("online", `Sincronizado com a nuvem às ${now}`);
+                } else if (pushIfEmpty) {
+                    await saveToCloud();
+                } else {
+                    setSyncIndicator("online", "Conectado à nuvem (nenhum dado salvo ainda)");
+                }
+            } catch (err) {
+                setSyncIndicator("error", "Falha ao conectar na nuvem. Verifique a URL do Firebase.");
+            }
+        }
+
+        function saveFirebaseUrl() {
+            const val = document.getElementById("firebase-url-input").value.trim();
+            if (!val) {
+                localStorage.removeItem(FIREBASE_URL_KEY);
+                firebaseUrl = "";
+                setSyncIndicator("", "Modo Local (Nuvem desconectada)");
+                return;
+            }
+            if (!val.startsWith("https://")) {
+                alert("Cole o link completo do Firebase começando com https://");
+                return;
+            }
+            firebaseUrl = val;
+            localStorage.setItem(FIREBASE_URL_KEY, firebaseUrl);
+            syncFromCloud(true);
+        }
+
+        function exportProgressCode() {
+            const payload = btoa(JSON.stringify({ p: progressData, c: activeCycleIndex }));
+            navigator.clipboard.writeText(payload).then(() => {
+                alert("Código de progresso copiado! Envie para o seu celular (WhatsApp/Keep) e clique em 'Colar Código'.");
+            }).catch(() => {
+                prompt("Copie o código abaixo:", payload);
+            });
+        }
+
+        function importProgressCode() {
+            const code = prompt("Cole aqui o código de progresso gerado no outro aparelho:");
+            if (!code) return;
+            try {
+                const decoded = JSON.parse(atob(code.trim()));
+                if (decoded && decoded.p) {
+                    progressData = normalizeSubjectProgress(decoded.p);
+                    activeCycleIndex = (decoded.c || 0) % SUBJECTS.length;
+                    render();
+                    saveToCloud();
+                    alert("Progresso importado com sucesso!");
+                }
+            } catch (e) {
+                alert("Código inválido. Tente copiar novamente.");
+            }
+        }
+
+        function toggleLesson(subjectId, lessonNumber) {
+            const arr = progressData[subjectId];
+            const idx = arr.indexOf(lessonNumber);
+            if (idx === -1) arr.push(lessonNumber);
+            else arr.splice(idx, 1);
+            render();
+            saveToCloud();
+        }
+
+        function setCycleSubject(index) {
+            activeCycleIndex = index;
+            render();
+            saveToCloud();
+        }
+
+        function nextSubjectInCycle() {
+            activeCycleIndex = (activeCycleIndex + 1) % SUBJECTS.length;
+            render();
+            saveToCloud();
+            const activeCard = document.getElementById(`card-${SUBJECTS[activeCycleIndex].id}`);
+            if (activeCard) activeCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        function resetAllProgress() {
+            if (confirm("Tem certeza que deseja desmarcar todas as aulas assistidas?")) {
+                SUBJECTS.forEach(sub => { progressData[sub.id] = []; });
+                activeCycleIndex = 0;
+                render();
+                saveToCloud();
+            }
+        }
+
+        function render() {
+            const container = document.getElementById("subjects-container");
+            container.innerHTML = "";
+
+            let grandTotal = 0;
+            let grandWatched = 0;
+
+            SUBJECTS.forEach((sub, idx) => {
+                const watchedArr = progressData[sub.id] || [];
+                const watchedCount = watchedArr.length;
+                const leftCount = sub.total - watchedCount;
+                const pct = Math.round((watchedCount / sub.total) * 100);
+
+                grandTotal += sub.total;
+                grandWatched += watchedCount;
+
+                const card = document.createElement("div");
+                card.id = `card-${sub.id}`;
+                card.className = "subject-card" +
+                    (idx === activeCycleIndex ? " active-cycle" : "") +
+                    (watchedCount === sub.total ? " completed-subject" : "");
+
+                let boxesHtml = "";
+                for (let i = 1; i <= sub.total; i++) {
+                    const isChecked = watchedArr.includes(i);
+                    const numStr = i < 10 ? "0" + i : i;
+                    boxesHtml += `<div class="lesson-box ${isChecked ? 'checked' : ''}" onclick="toggleLesson('${sub.id}', ${i})" title="Aula ${numStr}">${numStr}</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <div class="subject-title-group">
+                            <div class="step-num" onclick="setCycleSubject(${idx})" title="Clique para definir como matéria atual do ciclo">${sub.order}</div>
+                            <div class="subject-title">${sub.name}</div>
+                        </div>
+                        <div class="subject-counters">
+                            <span class="pill pill-done">Assistidas: ${watchedCount}</span>
+                            <span class="pill pill-left">Faltam: ${leftCount}</span>
+                            <span class="pill pill-total">Total: ${sub.total} (${pct}%)</span>
+                        </div>
+                    </div>
+                    <div class="subject-bar">
+                        <div class="subject-bar-fill" style="width: ${pct}%;"></div>
+                    </div>
+                    <div class="lessons-grid">${boxesHtml}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            const grandLeft = grandTotal - grandWatched;
+            const grandPct = grandTotal > 0 ? ((grandWatched / grandTotal) * 100).toFixed(1) : 0;
+
+            document.getElementById("total-lessons").textContent = grandTotal;
+            document.getElementById("watched-lessons").textContent = grandWatched;
+            document.getElementById("remaining-lessons").textContent = grandLeft;
+            document.getElementById("overall-percent").textContent = grandPct + "%";
+            document.getElementById("overall-bar").style.width = grandPct + "%";
+
+            const activeSub = SUBJECTS[activeCycleIndex];
+            document.getElementById("current-cycle-name").textContent = `${activeSub.order}. ${activeSub.name}`;
+        }
+
+        // Atualiza sozinho sempre que você alternar de aba ou desbloquear o celular
+        window.addEventListener("focus", () => {
+            if (firebaseUrl) syncFromCloud(false);
+        });
+
+        loadLocalState();
+        render();
+        if (firebaseUrl) syncFromCloud(false);
+    </script>
+</body>
+</html>
